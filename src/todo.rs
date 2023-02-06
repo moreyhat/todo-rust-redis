@@ -42,12 +42,10 @@ impl ToDoClient {
         let mut con = self.get_connection()?;
         let keys: Vec<String> = con.keys("*")?;
         for key in keys {
-            println!("{}", key);
-            let value = con.get(key.clone())?;
-            response.push(ToDo {
-                id: key,
-                description: value,
-            });
+            match self.get(key.clone()) {
+                Some(todo) => response.push(todo),
+                None => println!("To Do ({}) was not found.", key),
+            };
         }
         Ok(response)
     }

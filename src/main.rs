@@ -165,8 +165,8 @@ mod tests {
         };
 
         let id = to_do_client.put(&test_todo).unwrap();
-        let before_deleting = to_do_client.get(id.clone()).unwrap();
-        assert_eq!(before_deleting, test_todo);
+        let before_deleting = to_do_client.list().unwrap();
+        assert!(before_deleting.contains(&test_todo));
 
         let app = test::init_service(App::new().service(delete_todo)).await;
         let req = test::TestRequest::delete()
