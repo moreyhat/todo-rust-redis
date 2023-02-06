@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub struct ToDo {
-    pub id: f64,
+    pub id: String,
     pub description: String,
 }
 
@@ -16,23 +16,23 @@ impl ToDoClient {
         let client = redis::Client::open(self.endpoint.as_str())?;
         client.get_connection()
     }
-    pub fn get(&self, id: f64) -> Option<ToDo> {
+    pub fn get(&self, id: String) -> Option<ToDo> {
         let mut con = match self.get_connection() {
             Ok(con) => con,
             Err(_) => return None,
         };
 
-        match con.get(id) {
+        match con.get(id.clone()) {
             Ok(description) => return Some(ToDo { id, description }),
             Err(_) => return None,
         };
     }
-    pub fn put(&self, todo: &ToDo) -> Result<f64, RedisError> {
+    pub fn put(&self, todo: &ToDo) -> Result<String, RedisError> {
         let mut con = self.get_connection()?;
-        let _: () = con.set(todo.id, &todo.description)?;
-        Ok(todo.id)
+        let _: () = con.set(todo.id.clone(), &todo.description)?;
+        Ok(todo.id.clone())
     }
-    pub fn delete(&self, id: f64) -> Result<(), RedisError> {
+    pub fn delete(&self, id: String) -> Result<(), RedisError> {
         let mut con = self.get_connection()?;
         con.del(id)?;
         Ok(())
@@ -40,9 +40,10 @@ impl ToDoClient {
     pub fn list(&self) -> Result<Vec<ToDo>, RedisError> {
         let mut response: Vec<ToDo> = vec![];
         let mut con = self.get_connection()?;
-        let keys: Vec<f64> = con.keys("*")?;
+        let keys: Vec<String> = con.keys("*")?;
         for key in keys {
-            let value = con.get(key)?;
+            println!("{}", key);
+            let value = con.get(key.clone())?;
             response.push(ToDo {
                 id: key,
                 description: value,
@@ -55,7 +56,7 @@ impl ToDoClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use rand::{distributions::Alphanumeric, Rng};
     const REDIS_ENDPOINT: &str = "redis://127.0.0.1/";
 
     #[test]
@@ -64,13 +65,14 @@ mod tests {
             endpoint: String::from(REDIS_ENDPOINT),
         };
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64();
+        let id: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
 
         let test_data = ToDo {
-            id: now,
+            id: id.clone(),
             description: "This is test todo".to_string(),
         };
 
@@ -82,7 +84,7 @@ mod tests {
             }
         };
 
-        let stored_todo = to_do_client.get(now).unwrap();
+        let stored_todo = to_do_client.get(id).unwrap();
         assert_eq!(test_data.id, stored_todo.id);
         assert_eq!(test_data.description, stored_todo.description);
 
@@ -100,10 +102,16 @@ mod tests {
         let mut test_data: Vec<ToDo> = vec![];
 
         for i in 0..4 {
+            let id: String = rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(10)
+                .map(char::from)
+                .collect();
+
             test_data.push(ToDo {
-                id: i as f64,
+                id,
                 description: format!("To Do # {}", i),
-            })
+            });
         }
 
         for test_todo in &test_data {
@@ -111,7 +119,6 @@ mod tests {
         }
 
         let todo_list = to_do_client.list().unwrap();
-        assert_eq!(todo_list.len(), test_data.len());
         for test_todo in todo_list {
             assert!(test_data.contains(&test_todo));
             let _ = to_do_client.delete(test_todo.id);

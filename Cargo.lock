@@ -981,6 +981,7 @@ name = "todo-rust-redis"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "rand",
  "redis",
  "serde",
 ]

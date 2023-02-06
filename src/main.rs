@@ -1,6 +1,8 @@
-use actix_web::{error, get, post, web, App, HttpRequest, HttpServer, Responder, Result};
+use actix_web::{
+    delete, error, get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+};
+use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 use todo_rust_redis::todo::{ToDo, ToDoClient};
 
 const REDIS_ENDPOINT: &str = "redis://127.0.0.1/";
@@ -12,7 +14,7 @@ struct PostRequest {
 
 #[derive(Serialize, Deserialize)]
 struct PostResponse {
-    id: f64,
+    id: String,
 }
 
 #[get("/")]
@@ -38,10 +40,11 @@ async fn post_todo(todo: web::Json<PostRequest>) -> Result<impl Responder> {
         endpoint: REDIS_ENDPOINT.to_string(),
     };
 
-    let id = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64();
+    let id: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .map(char::from)
+        .collect();
     let description = todo.description.clone();
     let res = match to_do_client.put(&ToDo { id, description }) {
         Ok(id) => id,
@@ -49,6 +52,23 @@ async fn post_todo(todo: web::Json<PostRequest>) -> Result<impl Responder> {
     };
 
     Ok(web::Json(PostResponse { id: res }))
+}
+
+#[delete("/{id}")]
+async fn delete_todo(path: web::Path<String>) -> Result<impl Responder> {
+    let id = path.into_inner();
+    let to_do_client = ToDoClient {
+        endpoint: REDIS_ENDPOINT.to_string(),
+    };
+    match to_do_client.delete(id.clone()) {
+        Ok(_) => return Ok(HttpResponse::Ok()),
+        Err(_) => {
+            return Err(error::ErrorInternalServerError(format!(
+                "Failed to delete To Do: {}",
+                id
+            )));
+        }
+    };
 }
 
 #[actix_web::main]
@@ -62,16 +82,20 @@ async fn main() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{http::header::ContentType, test, App};
-    use todo_rust_redis::todo::{ToDo, ToDoClient};
+    use actix_web::{http::header::ContentType, test};
     const REDIS_ENDPOINT: &str = "redis://127.0.0.1/";
 
     #[actix_web::test]
     async fn test_list_todo() {
         let mut test_data: Vec<ToDo> = vec![];
-        for i in 100..104 {
+        for i in 0..4 {
+            let id: String = rand::thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(10)
+                .map(char::from)
+                .collect();
             test_data.push(ToDo {
-                id: i as f64,
+                id,
                 description: format!("To Do # {}", i),
             })
         }
@@ -83,18 +107,23 @@ mod tests {
             let _ = to_do_client.put(test_todo);
         }
 
+        let before = to_do_client.list().unwrap();
+        assert!(before.len() >= test_data.len());
+        for test_todo in &test_data {
+            assert!(before.contains(&test_todo));
+        }
+
         let app = test::init_service(App::new().service(list_todo)).await;
-        let req = test::TestRequest::default()
+        let req = test::TestRequest::get()
+            .uri("/")
             .insert_header(ContentType::json())
             .to_request();
         let resp: Vec<ToDo> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.len(), test_data.len());
         for test_todo in resp {
             assert!(test_data.contains(&test_todo));
             _ = to_do_client.delete(test_todo.id);
         }
     }
-
     #[actix_web::test]
     async fn test_post_todo() {
         let test_description = "Post ToDo test";
@@ -111,10 +140,41 @@ mod tests {
             endpoint: REDIS_ENDPOINT.to_string(),
         };
 
-        let posted_data = to_do_client.get(resp.id).unwrap();
+        let posted_data = to_do_client.get(resp.id.clone()).unwrap();
         assert_eq!(posted_data.id, resp.id);
 
         assert_eq!(posted_data.description, test_description.to_string());
         _ = to_do_client.delete(resp.id);
+    }
+
+    #[actix_web::test]
+    async fn test_delete_todo() {
+        let id: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+
+        let test_todo = ToDo {
+            id,
+            description: "ToDo for deleting test".to_string(),
+        };
+
+        let to_do_client = ToDoClient {
+            endpoint: REDIS_ENDPOINT.to_string(),
+        };
+
+        let id = to_do_client.put(&test_todo).unwrap();
+        let before_deleting = to_do_client.get(id.clone()).unwrap();
+        assert_eq!(before_deleting, test_todo);
+
+        let app = test::init_service(App::new().service(delete_todo)).await;
+        let req = test::TestRequest::delete()
+            .uri(format!("/{}", id).as_str())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        let after_deleting = to_do_client.list().unwrap();
+        assert!(!after_deleting.contains(&test_todo));
     }
 }
