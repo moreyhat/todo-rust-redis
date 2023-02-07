@@ -55,12 +55,17 @@ impl ToDoClient {
 mod tests {
     use super::*;
     use rand::{distributions::Alphanumeric, Rng};
-    const REDIS_ENDPOINT: &str = "redis://127.0.0.1/";
+    use std::env;
 
     #[test]
     fn put_get_del_success() {
+        let redis_host = match env::var("REDIS_HOST") {
+            Ok(host) => host,
+            Err(_) => "127.0.0.1".to_string(),
+        };
+        let redis_endpoint = format!("redis://{}/", redis_host);
         let to_do_client = ToDoClient {
-            endpoint: String::from(REDIS_ENDPOINT),
+            endpoint: redis_endpoint,
         };
 
         let id: String = rand::thread_rng()
@@ -93,10 +98,14 @@ mod tests {
     }
     #[test]
     fn get_all_keys_success() {
-        let to_do_client = ToDoClient {
-            endpoint: String::from(REDIS_ENDPOINT),
+        let redis_host = match env::var("REDIS_HOST") {
+            Ok(host) => host,
+            Err(_) => "127.0.0.1".to_string(),
         };
-
+        let redis_endpoint = format!("redis://{}/", redis_host);
+        let to_do_client = ToDoClient {
+            endpoint: redis_endpoint,
+        };
         let mut test_data: Vec<ToDo> = vec![];
 
         for i in 0..4 {

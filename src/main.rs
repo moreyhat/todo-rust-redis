@@ -3,9 +3,8 @@ use actix_web::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
+use std::env;
 use todo_rust_redis::todo::{ToDo, ToDoClient};
-
-const REDIS_ENDPOINT: &str = "redis://127.0.0.1/";
 
 #[derive(Serialize, Deserialize)]
 struct PostRequest {
@@ -19,8 +18,13 @@ struct PostResponse {
 
 #[get("/")]
 async fn list_todo(_req: HttpRequest) -> Result<impl Responder> {
+    let redis_host = match env::var("REDIS_HOST") {
+        Ok(host) => host,
+        Err(_) => "127.0.0.1".to_string(),
+    };
+    let redis_endpoint = format!("redis://{}/", redis_host);
     let to_do_client = ToDoClient {
-        endpoint: REDIS_ENDPOINT.to_string(),
+        endpoint: redis_endpoint,
     };
 
     let to_do_list = match to_do_client.list() {
@@ -36,8 +40,13 @@ async fn list_todo(_req: HttpRequest) -> Result<impl Responder> {
 
 #[post("/")]
 async fn post_todo(todo: web::Json<PostRequest>) -> Result<impl Responder> {
+    let redis_host = match env::var("REDIS_HOST") {
+        Ok(host) => host,
+        Err(_) => "127.0.0.1".to_string(),
+    };
+    let redis_endpoint = format!("redis://{}/", redis_host);
     let to_do_client = ToDoClient {
-        endpoint: REDIS_ENDPOINT.to_string(),
+        endpoint: redis_endpoint,
     };
 
     let id: String = rand::thread_rng()
@@ -57,8 +66,13 @@ async fn post_todo(todo: web::Json<PostRequest>) -> Result<impl Responder> {
 #[delete("/{id}")]
 async fn delete_todo(path: web::Path<String>) -> Result<impl Responder> {
     let id = path.into_inner();
+    let redis_host = match env::var("REDIS_HOST") {
+        Ok(host) => host,
+        Err(_) => "127.0.0.1".to_string(),
+    };
+    let redis_endpoint = format!("redis://{}/", redis_host);
     let to_do_client = ToDoClient {
-        endpoint: REDIS_ENDPOINT.to_string(),
+        endpoint: redis_endpoint,
     };
     match to_do_client.delete(id.clone()) {
         Ok(_) => return Ok(HttpResponse::Ok()),
