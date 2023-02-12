@@ -1,9 +1,9 @@
 type ToDoProps = {
-    description: string
+  description: string
 }
 
 const ToDo = (props: ToDoProps) => {
-    return <div>{props.description}</div>
+  return <div>{props.description}</div>
 }
 
 export default ToDo
