@@ -28,7 +28,7 @@ describe('ToDoItem', () => {
     expect(button).toBeEnabled()
   })
 
-  test('Click delete triggers event', async () => {
+  test('Click delete triggers event', () => {
     const description = 'Delete event trigger check'
     const todo: ToDo = {
       id: 'ToDoItem-test-3',
@@ -37,7 +37,7 @@ describe('ToDoItem', () => {
     const onClick = jest.fn()
     render(<ToDoItem item={todo} onClickDelete={onClick} />)
 
-    await userEvent.click(screen.getByRole('button'))
+    userEvent.click(screen.getByRole('button'))
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 })
