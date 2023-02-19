@@ -10,7 +10,7 @@ describe('ToDoItem', () => {
       id: 'ToDoItem-test-1',
       description: description,
     }
-    render(<ToDoItem item={todo} onClick={jest.fn()} />)
+    render(<ToDoItem item={todo} onClickDelete={jest.fn()} />)
     const component = screen.getByText(description)
     expect(component).toBeInTheDocument()
   })
@@ -21,7 +21,7 @@ describe('ToDoItem', () => {
       id: 'ToDoItem-test-2',
       description: description,
     }
-    render(<ToDoItem item={todo} onClick={jest.fn()} />)
+    render(<ToDoItem item={todo} onClickDelete={jest.fn()} />)
 
     const button = screen.getByRole('button')
     expect(button).toBeInTheDocument()
@@ -35,7 +35,7 @@ describe('ToDoItem', () => {
       description: description,
     }
     const onClick = jest.fn()
-    render(<ToDoItem item={todo} onClick={onClick} />)
+    render(<ToDoItem item={todo} onClickDelete={onClick} />)
 
     await userEvent.click(screen.getByRole('button'))
     expect(onClick).toHaveBeenCalledTimes(1)

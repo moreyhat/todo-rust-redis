@@ -1,15 +1,24 @@
 import { Box } from '@mui/material'
 import ToDoItem from './ToDoItem'
 
-type ToDoProps = {
+type ToDoListProps = {
   items: ToDo[]
+  handleDelete?: (id: string) => void
 }
 
-const ToDoList = (props: ToDoProps) => {
+const ToDoList = (props: ToDoListProps) => {
   return (
     <Box>
       {props.items.map((item) => (
-        <ToDoItem item={item} key={item.id}></ToDoItem>
+        <ToDoItem
+          item={item}
+          key={item.id}
+          onClickDelete={() => {
+            if (props.handleDelete) {
+              props.handleDelete(item.id)
+            }
+          }}
+        ></ToDoItem>
       ))}
     </Box>
   )
