@@ -1,3 +1,5 @@
+use actix_cors::Cors;
+use actix_web::http::header;
 use actix_web::{
     delete, error, get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
 };
@@ -87,10 +89,18 @@ async fn delete_todo(path: web::Path<String>) -> Result<impl Responder> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(list_todo).service(post_todo))
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    HttpServer::new(|| {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST", "DELETE"])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);
+
+        App::new().wrap(cors).service(list_todo).service(post_todo)
+    })
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }
 
 #[cfg(test)]
