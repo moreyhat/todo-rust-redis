@@ -44,9 +44,13 @@ const App = () => {
   }, [])
 
   return (
-    <Box width={'50%'}>
-      <Typography variant='h2'>ToDo List</Typography>
-      <ToDoList items={items} handleCreate={handleCreate} handleDelete={handleDelete} />
+    <Box width={'50%'} margin='auto'>
+      <Box textAlign={'center'}>
+        <Typography variant='h2'>ToDo List</Typography>
+      </Box>
+      <Box>
+        <ToDoList items={items} handleCreate={handleCreate} handleDelete={handleDelete} />
+      </Box>
     </Box>
   )
 }
