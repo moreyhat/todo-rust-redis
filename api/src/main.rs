@@ -96,7 +96,11 @@ async fn main() -> std::io::Result<()> {
             .allowed_header(header::CONTENT_TYPE)
             .max_age(3600);
 
-        App::new().wrap(cors).service(list_todo).service(post_todo)
+        App::new()
+            .wrap(cors)
+            .service(list_todo)
+            .service(post_todo)
+            .service(delete_todo)
     })
     .bind(("0.0.0.0", 8080))?
     .run()
