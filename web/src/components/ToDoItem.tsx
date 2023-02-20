@@ -13,7 +13,7 @@ const ToDoItem = (props: ToDoItemProps) => {
         <Typography>{props.item.description}</Typography>
       </Grid>
       <Grid item xs={2}>
-        <IconButton onClick={props.onClickDelete}>
+        <IconButton onClick={props.onClickDelete} id={`delete-button-for-${props.item.id}`}>
           <ClearIcon />
         </IconButton>
       </Grid>

@@ -1,25 +1,37 @@
-import React from 'react'
-import logo from './logo.svg'
-import './App.css'
+import React, { useEffect, useState } from 'react'
+import { Box, Typography } from '@mui/material'
+import ToDoList from './components/ToDoList'
+const TO_DO_API_ENDPOINT = 'http://localhost:8080'
 
-function App() {
+const App = () => {
+  const [items, setItems] = useState<ToDo[]>([])
+
+  const getItems = () => {
+    fetch(TO_DO_API_ENDPOINT).then((res) => {
+      res.json().then((res) => {
+        setItems(res as ToDo[])
+      })
+    })
+  }
+
+  const handleDelete = (id: string) => {
+    const request = {
+      method: 'DELETE',
+    }
+    fetch(`${TO_DO_API_ENDPOINT}/${id}`, request).then(() => {
+      getItems()
+    })
+  }
+
+  useEffect(() => {
+    getItems()
+  }, [])
+
   return (
-    <div className='App'>
-      <header className='App-header'>
-        <img src={logo} className='App-logo' alt='logo' />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className='App-link'
-          href='https://reactjs.org'
-          target='_blank'
-          rel='noopener noreferrer'
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Box width={'50%'}>
+      <Typography variant='h2'>ToDo List</Typography>
+      <ToDoList items={items} handleDelete={handleDelete} />
+    </Box>
   )
 }
 
