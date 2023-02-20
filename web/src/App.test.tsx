@@ -89,4 +89,31 @@ describe('AppTest', () => {
       expect(screen.queryAllByText(item).length).toBe(0)
     })
   })
+
+  test('Create ToDo', async () => {
+    const item = 'The create test item on App'
+
+    render(<App />)
+    const createField = screen.getByPlaceholderText('Enter todo')
+    const createButton = screen.getByRole('button', { name: 'Add' })
+
+    act(() => {
+      userEvent.type(createField, item)
+      userEvent.click(createButton)
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(item)).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      const toDoList: ToDo[] = await (await fetch(TO_DO_API_ENDPOINT)).json()
+      for (const i in toDoList) {
+        if (toDoList[i].description === item) {
+          const id = toDoList[i].id
+          await fetch(`${TO_DO_API_ENDPOINT}/${id}`, { method: 'DELETE' })
+        }
+      }
+    })
+  })
 })

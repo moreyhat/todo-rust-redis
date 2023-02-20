@@ -23,6 +23,22 @@ const App = () => {
     })
   }
 
+  const handleCreate = (description: string) => {
+    const todo = {
+      description: description,
+    }
+    const request = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8',
+      },
+      body: JSON.stringify(todo),
+    }
+    fetch(TO_DO_API_ENDPOINT, request).then(() => {
+      getItems()
+    })
+  }
+
   useEffect(() => {
     getItems()
   }, [])
@@ -30,7 +46,7 @@ const App = () => {
   return (
     <Box width={'50%'}>
       <Typography variant='h2'>ToDo List</Typography>
-      <ToDoList items={items} handleDelete={handleDelete} />
+      <ToDoList items={items} handleCreate={handleCreate} handleDelete={handleDelete} />
     </Box>
   )
 }
