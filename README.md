@@ -1,4 +1,5 @@
 # Sample TODO application with Rust and Redis
+This project is a sample todo application built with Rust and Redis.
 
 ## Prerequisite
 - Install [Docker](https://docs.docker.com/get-docker/)
